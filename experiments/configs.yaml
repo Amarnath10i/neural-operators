@@ -1,0 +1,277 @@
+# Neural Operators - Experiment Configurations
+
+Pre-built YAML configurations for reproducible experiments.
+
+```yaml
+# fno_navier_stokes.yaml - FNO on 2D Navier-Stokes
+model:
+  type: fno2d
+  modes: 16
+  width: 64
+  n_layers: 4
+  in_channels: 3  # vorticity, forcing, time
+  out_channels: 1
+  spectral_conv_type: standard
+  dropout: 0.0
+
+data:
+  pde_type: navier_stokes
+  n_samples: 2000
+  resolution: 64
+  nu_range: [1e-4, 1e-3]
+  T: 50.0
+  dt: 1e-3
+  save_every: 1000
+  forcing_type: kolmogorov
+  train_ratio: 0.8
+  val_ratio: 0.1
+
+training:
+  batch_size: 32
+  epochs: 500
+  optimizer: adamw
+  lr: 1e-3
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+  warmup_epochs: 10
+  grad_accum_steps: 1
+  max_grad_norm: 1.0
+  use_amp: true
+  early_stopping_patience: 50
+  early_stopping_metric: val_loss
+
+loss:
+  type: spectral
+  weight_low: 1.0
+  weight_high: 0.5
+  modes: 16
+
+evaluation:
+  zero_shot_superres: true
+  target_resolutions: [128, 256, 512]
+  domain_adaptation: false
+
+logging:
+  use_wandb: true
+  wandb_project: neural-operators
+  wandb_entity: null
+  use_tensorboard: true
+  log_dir: logs/fno_ns
+  checkpoint_dir: checkpoints/fno_ns
+  save_every: 10
+```
+
+```yaml
+# fno_navier_stokes_large.yaml - Large scale FNO
+model:
+  type: fno2d
+  modes: 24
+  width: 128
+  n_layers: 6
+  in_channels: 3
+  out_channels: 1
+  spectral_conv_type: factorized
+  dropout: 0.1
+
+data:
+  pde_type: navier_stokes
+  n_samples: 5000
+  resolution: 128
+  nu_range: [1e-4, 1e-3]
+  T: 50.0
+  dt: 1e-3
+  save_every: 1000
+  forcing_type: kolmogorov
+
+training:
+  batch_size: 16
+  epochs: 1000
+  optimizer: adamw
+  lr: 5e-4
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+  warmup_epochs: 20
+  grad_accum_steps: 2
+  max_grad_norm: 1.0
+  use_amp: true
+  early_stopping_patience: 100
+
+loss:
+  type: spectral
+  weight_low: 1.0
+  weight_high: 0.3
+  modes: 24
+
+evaluation:
+  zero_shot_superres: true
+  target_resolutions: [256, 512, 1024]
+  domain_adaptation: true
+```
+
+```yaml
+# deeponet_darcy.yaml - DeepONet on Darcy Flow
+model:
+  type: deeponet
+  branch_input_dim: 7225  # 85x85 flattened
+  trunk_input_dim: 2      # (x, y) coordinates
+  output_dim: 1
+  branch_hidden: [256, 256, 256]
+  trunk_hidden: [256, 256, 256]
+  p: 256
+  activation: gelu
+
+data:
+  pde_type: darcy
+  n_samples: 2000
+  resolution: 85
+  permeability_range: [0.1, 10.0]
+  correlation_length: 0.1
+
+training:
+  batch_size: 64
+  epochs: 500
+  optimizer: adamw
+  lr: 1e-3
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+  warmup_epochs: 10
+  use_amp: true
+  early_stopping_patience: 30
+
+loss:
+  type: mse
+
+evaluation:
+  zero_shot_superres: true
+  target_resolutions: [171, 341]
+  domain_adaptation: true
+```
+
+```yaml
+# superresolution.yaml - Zero-shot super-resolution
+model:
+  type: fno2d
+  modes: 16
+  width: 64
+  n_layers: 4
+  in_channels: 3
+  out_channels: 1
+
+data:
+  train_resolution: 64
+  test_resolutions: [128, 256, 512, 1024]
+  n_samples: 2000
+  pde_type: navier_stokes
+  nu_range: [1e-4, 1e-3]
+  T: 50.0
+  dt: 1e-3
+
+training:
+  batch_size: 32
+  epochs: 500
+  optimizer: adamw
+  lr: 1e-3
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+  warmup_epochs: 10
+  use_amp: true
+
+evaluation:
+  metrics: [relative_l2, spectral, energy, enstrophy]
+  save_predictions: true
+```
+
+```yaml
+# domain_adaptation.yaml - Few-shot domain adaptation
+model:
+  type: fno2d
+  modes: 16
+  width: 64
+  n_layers: 4
+
+data:
+  source_pde: darcy
+  target_pde: darcy
+  source_permeability_range: [0.1, 10.0]
+  target_permeability_range: [0.01, 100.0]
+  source_correlation_length: 0.1
+  target_correlation_length: 0.2
+  n_source_samples: 2000
+  n_target_shots: [1, 5, 10, 50, 100]
+
+training:
+  pretrain_epochs: 300
+  finetune_epochs: 200
+  optimizer: adamw
+  lr: 1e-3
+  finetune_lr: 1e-4
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+
+evaluation:
+  metrics: [relative_l2]
+  few_shot_eval: true
+```
+
+```yaml
+# theory_verification.yaml - Theory verification experiments
+model:
+  type: fno2d
+  modes: 16
+  width: 64
+  n_layers: 4
+
+data:
+  pde_type: navier_stokes
+  n_samples: 1000
+  resolution: 64
+
+theory:
+  enabled: true
+  verify_generalization: true
+  verify_spectral_convergence: true
+  verify_stability: true
+  verify_discretization_invariance: true
+  delta: 0.05
+  rademacher_samples: 100
+  lipschitz_pairs: 1000
+  perturbation_magnitudes: [1e-4, 1e-3, 1e-2, 1e-1]
+  resolutions: [32, 64, 128, 256]
+  modes_list: [4, 8, 12, 16, 20, 24]
+  input_smoothness: 2.0
+```
+
+```yaml
+# gno_airfoil.yaml - GNO on Airfoil (unstructured mesh)
+model:
+  type: gno
+  in_channels: 3
+  out_channels: 2
+  hidden_channels: 128
+  n_layers: 6
+  modes: 16
+  edge_attr_dim: 1
+  lifting_channels: 256
+  projection_channels: 256
+
+data:
+  pde_type: airfoil
+  n_samples: 1000
+  mesh_type: unstructured
+  resolution: variable
+
+training:
+  batch_size: 8
+  epochs: 300
+  optimizer: adamw
+  lr: 5e-4
+  weight_decay: 1e-4
+  scheduler: cosine_warmup
+  warmup_epochs: 15
+  grad_accum_steps: 4
+  use_amp: true
+  early_stopping_patience: 30
+
+loss:
+  type: mse
+```

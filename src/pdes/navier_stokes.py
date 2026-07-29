@@ -156,6 +156,8 @@ class SpectralSolver2D:
         Solve 2D Navier-Stokes in vorticity form:
         w_t + u·∇w = nu ∇²w + f
         where u = ∇^⊥ ψ, ∇²ψ = w
+        
+        Uses 2/3 dealiasing rule for stability.
         """
         n_steps = int(T / dt)
         w = w0.clone()
@@ -164,6 +166,14 @@ class SpectralSolver2D:
         trajectory = torch.zeros(n_save, *w.shape, device=self.device, dtype=w.dtype)
         trajectory[0] = w
         save_idx = 1
+        
+        # 2/3 dealiasing mask
+        k_max = self.n // 3
+        dealis_mask = torch.zeros_like(self.K2)
+        dealis_mask[:k_max, :k_max] = 1
+        dealis_mask[-k_max:, :k_max] = 1
+        dealis_mask[:k_max, -k_max:] = 1
+        dealis_mask[-k_max:, -k_max:] = 1
         
         diff_factor = torch.exp(-nu * self.K2 * dt)
         
@@ -176,9 +186,10 @@ class SpectralSolver2D:
             u_x = torch.fft.irfft2(u_x_hat, s=(self.n, self.n))
             u_y = torch.fft.irfft2(u_y_hat, s=(self.n, self.n))
             
-            # Advection term: u·∇w
-            w_x = torch.fft.irfft2(1j * self.KX * torch.fft.rfft2(w))
-            w_y = torch.fft.irfft2(1j * self.KY * torch.fft.rfft2(w))
+            # Advection term: u·∇w (with dealiasing)
+            w_hat = torch.fft.rfft2(w)
+            w_x = torch.fft.irfft2(1j * self.KX * w_hat)
+            w_y = torch.fft.irfft2(1j * self.KY * w_hat)
             
             advection = -(u_x * w_x + u_y * w_y)
             
@@ -186,12 +197,15 @@ class SpectralSolver2D:
             if forcing is not None:
                 advection = advection + forcing
             
-            # Time step in Fourier space
-            w_hat = torch.fft.rfft2(w)
+            # Time step in Fourier space with dealiasing
             adv_hat = torch.fft.rfft2(advection)
+            adv_hat = adv_hat * dealis_mask
             
             w_hat = diff_factor * w_hat + dt * diff_factor * adv_hat
             w = torch.fft.irfft2(w_hat, s=(self.n, self.n))
+            
+            # Safety: clip extreme values
+            w = torch.clamp(w, -1000, 1000)
             
             if step % save_every == 0:
                 trajectory[save_idx] = w
@@ -382,7 +396,7 @@ def generate_navier_stokes_data(
         )
         
         inputs.append(w0.cpu())
-        outputs.append(traj[-1].cpu())
+        outputs.append(traj[-1].squeeze(0).cpu())  # Remove batch dim
         nus.append(nu)
         trajectories.append(traj.cpu())
     
