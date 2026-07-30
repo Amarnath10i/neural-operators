@@ -1,0 +1,48 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# PyTorch checkpoints (large files)
+*.pt
+*.pth
+checkpoints/
+
+# Data files
+data/
+*.h5
+*.hdf5
+
+# Logs
+logs/
+*.log
+tensorboard/
+events.out.tfevents.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Wandb
+wandb/
+wandb-*/
