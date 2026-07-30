@@ -1,0 +1,65 @@
+{
+  "experiment": "neural-operators-burgers-fno1d",
+  "timestamp": "2026-07-30T02:45:00Z",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "cuda": "12.1",
+    "pytorch": "2.5.1+cu121"
+  },
+  "model": {
+    "type": "FNO1d",
+    "modes": 16,
+    "width": 64,
+    "n_layers": 4,
+    "in_channels": 1,
+    "out_channels": 1,
+    "params": 357889
+  },
+  "data": {
+    "pde": "Burgers 1D",
+    "n_samples": 171,
+    "resolution": 256,
+    "T": 0.1,
+    "dt": 1e-3,
+    "train": 136,
+    "val": 17,
+    "test": 18
+  },
+  "training": {
+    "epochs": 25,
+    "batch_size": 16,
+    "optimizer": "AdamW",
+    "lr": 1e-3,
+    "weight_decay": 1e-4,
+    "scheduler": "CosineAnnealingLR with warmup",
+    "loss": "SpectralLoss (weight_low=1.0, weight_high=0.5)",
+    "amp": false
+  },
+  "results": {
+    "best_train_loss": 0.073173,
+    "best_val_loss": 0.371851,
+    "final_train_loss": 0.027876,
+    "final_val_loss": 0.400279,
+    "test_metrics": {
+      "relative_l2_error": {"mean": 1.040163, "std": 1.282423},
+      "relative_l1_error": {"mean": 1.221826, "std": 1.912904},
+      "mse_loss": {"mean": 0.096273, "std": 0.081688},
+      "max_error": {"mean": 0.748224, "std": 0.899698},
+      "correlation_coefficient": {"mean": 0.803376, "std": 0.176692}
+    },
+    "detailed_metrics": {
+      "rel_l2": {"mean": 0.904563, "std": 0.174342, "median": 0.904563},
+      "rel_l1": {"mean": 1.013056, "std": 0.268418, "median": 1.013056},
+      "mse": {"mean": 0.096273, "std": 0.081688, "median": 0.096273},
+      "max_error": {"mean": 0.561388, "std": 0.240217, "median": 0.561388},
+      "correlation": {"mean": 0.757733, "std": 0.058684, "median": 0.757733},
+      "energy_error": {"mean": 2.046958, "std": 1.790852, "median": 2.046958}
+    }
+  },
+  "checkpoints": {
+    "best_model": "checkpoints/exp_burgers/best_model.pt",
+    "latest": "checkpoints/exp_burgers/latest.pt"
+  },
+  "logs": "logs/exp_burgers",
+  "status": "completed"
+}
