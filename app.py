@@ -37,7 +37,8 @@ tab_b, tab_d, tab_r = st.tabs(["Burgers equation", "Darcy flow", "Benchmark resu
 
 with tab_b:
     st.markdown("**u_t + u u_x = 0.1 u_xx** on a periodic interval. The FNO maps the initial condition to the "
-                "solution at t = 1. It was trained at **256 points**; finer grids are zero-shot.")
+                "solution at t = 1. It was trained at **256 points**; finer grids are zero-shot. Note the scales: "
+                "viscosity leaves under 2% of the initial amplitude by t = 1, which is why this classic benchmark is easy.")
     c1, c2, c3 = st.columns(3)
     src = c1.radio("Input", ["Held-out test sample", "New random initial condition"], key="b_src")
     n = c2.select_slider("Grid points", [128, 256, 512, 1024], value=1024)
