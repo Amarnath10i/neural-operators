@@ -1,0 +1,4 @@
+# Training the models and running the benchmark (scripts/run_benchmark.py)
+-r requirements.txt
+torch>=2.4
+pytest>=8.0
